@@ -17,7 +17,7 @@
     Name:
     <input type="text" id="name" name="name" required><br><br>
 
-    Employee ID (11-99): 
+    Employee ID (11-99):
     <input type="number" id="empId" name="empId" min="11" max="99" required><br><br>
 
     Status:
@@ -30,9 +30,9 @@
 
     <button type="submit">Submit Check-In</button>
   </form>
-  
+
   <script>
-    // Auto-fetch geolocation
+    // Auto-fetch geolocation on page load
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(function(position) {
         document.getElementById('latitude').value = position.coords.latitude;
@@ -44,7 +44,7 @@
       alert("Geolocation is not supported by your browser.");
     }
 
-    // Form submission
+    // Submit data to Google Sheets on form submit
     document.getElementById('geoForm').addEventListener('submit', function(e) {
       e.preventDefault();
 
@@ -54,7 +54,6 @@
       let latitude = document.getElementById('latitude').value;
       let longitude = document.getElementById('longitude').value;
 
-      // Validation
       if (!name) {
         alert("❌ Please enter your name.");
         return;
@@ -68,57 +67,37 @@
         return;
       }
 
-      alert(
-        "✅ Check-In Submitted:\n" +
-        "Name: " + name + "\n" +
-        "Employee ID: " + empId + "\n" +
-        "Status: " + status + "\n" +
-        "Latitude: " + latitude + "\n" +
-        "Longitude: " + longitude
-      );
-
-      // Backend / Google Sheets / Firebase saving code can be added here
-    });
-  </script>
-  <script>
-document.getElementById('geoForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    let name = document.getElementById('name').value.trim();
-    let empId = parseInt(document.getElementById('empId').value);
-    let status = document.getElementById('status').value;
-    let latitude = document.getElementById('latitude').value;
-    let longitude = document.getElementById('longitude').value;
-
-    if (!name || empId < 11 || empId > 99 || !status) {
-        alert("❌ Please fill in all fields correctly.");
-        return;
-    }
-
-    fetch('https://script.google.com/macros/s/AKfycbzIm2zLINOxzZiJLS-s1zl9oLZTx4k9gWZyZS42uEN2Qr97vlLUz8kIZ65eclQCckjTPA/exec', {
+      fetch('https://script.google.com/macros/s/AKfycbzIm2zLINOxzZiJLS-s1zl9oLZTx4k9gWZyZS42uEN2Qr97vlLUz8kIZ65eclQCckjTPA/exec', {
         method: 'POST',
         body: JSON.stringify({
-            name: name,
-            empId: empId,
-            status: status,
-            latitude: latitude,
-            longitude: longitude
+          name: name,
+          empId: empId,
+          status: status,
+          latitude: latitude,
+          longitude: longitude
         }),
         headers: {
-            'Content-Type': 'application/json'
+          'Content-Type': 'application/json'
         }
-    })
-    .then(res => res.json())
-    .then(data => {
+      })
+      .then(res => res.json())
+      .then(data => {
         alert("✅ Check-In Submitted Successfully!");
         document.getElementById('geoForm').reset();
-    })
-    .catch(err => {
+
+        // Auto-refill geolocation after reset
+        if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('latitude').value = position.coords.latitude;
+            document.getElementById('longitude').value = position.coords.longitude;
+          });
+        }
+      })
+      .catch(err => {
         console.error(err);
         alert("❌ Error submitting data.");
+      });
     });
-});
-</script>
-
+  </script>
 </body>
 </html>
