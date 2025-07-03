@@ -66,20 +66,26 @@
         alert("❌ Please select a status (In, Out, Absent).");
         return;
       }
+      let url = 'https://script.google.com/macros/s/AKfycbxAYNv6MWZ20KBsxlFLmEvjjUIfiBIjYFwcN2K2O8h7q975JQDpmpHa0xA0aA_EEaFU8A/exec';
+      url += `?name=${encodeURIComponent(name)}&empId=${encodeURIComponent(empId)}&status=${encodeURIComponent(status)}&latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`;
+      fetch(url)
+        .then(response => response.text())
+        .then(data => {
+          alert("✅ Check-In Submitted Successfully!");
+          document.getElementById('geoForm').reset();
 
-      fetch('https://script.google.com/macros/s/AKfycbx0KVXVPxtbIfPCjqCOS37eXmfyeopq3vJ5r91jOEP-mOczwQdbr9mgq0vx_MdVkbjKTw/exec', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: name,
-          empId: empId,
-          status: status,
-          latitude: latitude,
-          longitude: longitude
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
+    // Auto refill geolocation after reset
+          if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('latitude').value = position.coords.latitude;
+            document.getElementById('longitude').value = position.coords.longitude;
+        });
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert("❌ Error submitting data.");
+        });
       .then(res => res.json())
       .then(data => {
         alert("✅ Check-In Submitted Successfully!");
