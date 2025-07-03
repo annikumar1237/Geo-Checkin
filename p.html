@@ -30,7 +30,7 @@
 
     <button type="submit">Submit Check-In</button>
   </form>
-
+  
   <script>
     // Auto-fetch geolocation
     if ("geolocation" in navigator) {
@@ -80,5 +80,45 @@
       // Backend / Google Sheets / Firebase saving code can be added here
     });
   </script>
+  <script>
+document.getElementById('geoForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    let name = document.getElementById('name').value.trim();
+    let empId = parseInt(document.getElementById('empId').value);
+    let status = document.getElementById('status').value;
+    let latitude = document.getElementById('latitude').value;
+    let longitude = document.getElementById('longitude').value;
+
+    if (!name || empId < 11 || empId > 99 || !status) {
+        alert("❌ Please fill in all fields correctly.");
+        return;
+    }
+
+    fetch('https://script.google.com/macros/s/AKfycbzIm2zLINOxzZiJLS-s1zl9oLZTx4k9gWZyZS42uEN2Qr97vlLUz8kIZ65eclQCckjTPA/exec', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: name,
+            empId: empId,
+            status: status,
+            latitude: latitude,
+            longitude: longitude
+        }),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("✅ Check-In Submitted Successfully!");
+        document.getElementById('geoForm').reset();
+    })
+    .catch(err => {
+        console.error(err);
+        alert("❌ Error submitting data.");
+    });
+});
+</script>
+
 </body>
 </html>
