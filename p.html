@@ -1,27 +1,91 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Employee Geo Check-In</title>
+  <title>Firebase Geo Check-In</title>
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUDlJNkQ97dx5Itf0G5xvLT4jHKhpCCNY",
+      authDomain: "geo-location-d8b6b.firebaseapp.com",
+      projectId: "geo-location-d8b6b",
+      storageBucket: "geo-location-d8b6b.appspot.com",
+      messagingSenderId: "715779083194",
+      appId: "1:715779083194:web:91607d7a0b05927c18eb83",
+      measurementId: "G-Z0E1VL0KM9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Geolocation on load
+    window.getLocation = function() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          document.getElementById('latitude').value = position.coords.latitude;
+          document.getElementById('longitude').value = position.coords.longitude;
+        }, function(error) {
+          alert("❌ Location access denied or unavailable: " + error.message);
+        });
+      } else {
+        alert("❌ Geolocation is not supported by your browser.");
+      }
+    };
+
+    // Submit form and save to Firestore
+    window.submitForm = async function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value.trim();
+      const empId = parseInt(document.getElementById('empId').value);
+      const status = document.getElementById('status').value;
+      const latitude = document.getElementById('latitude').value;
+      const longitude = document.getElementById('longitude').value;
+
+      if (!name || isNaN(empId) || empId < 11 || empId > 99 || !status) {
+        alert("❌ Please fill all fields correctly.");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "geoCheckins"), {
+          timestamp: new Date(),
+          name: name,
+          empId: empId,
+          status: status,
+          latitude: latitude,
+          longitude: longitude
+        });
+        alert("✅ Check-In Submitted Successfully!");
+        document.getElementById('geoForm').reset();
+        getLocation();
+      } catch (error) {
+        console.error("Error adding document: ", error);
+        alert("❌ Error submitting data.");
+      }
+    };
+  </script>
 </head>
-<body>
+<body onload="getLocation()">
   <h2>Employee Geo Check-In Form</h2>
-
-  <form id="geoForm">
-
+  <form id="geoForm" onsubmit="submitForm(event)">
     Latitude:
-    <input type="text" id="latitude" name="latitude" readonly><br><br>
+    <input type="text" id="latitude" readonly><br><br>
 
     Longitude:
-    <input type="text" id="longitude" name="longitude" readonly><br><br>
+    <input type="text" id="longitude" readonly><br><br>
 
     Name:
-    <input type="text" id="name" name="name" required><br><br>
+    <input type="text" id="name" required><br><br>
 
     Employee ID (11-99):
-    <input type="number" id="empId" name="empId" min="11" max="99" required><br><br>
+    <input type="number" id="empId" min="11" max="99" required><br><br>
 
     Status:
-    <select id="status" name="status" required>
+    <select id="status" required>
       <option value="">--Select Status--</option>
       <option value="In">In</option>
       <option value="Out">Out</option>
@@ -30,80 +94,5 @@
 
     <button type="submit">Submit Check-In</button>
   </form>
-
-  <script>
-    // Auto-fetch geolocation on page load
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        document.getElementById('latitude').value = position.coords.latitude;
-        document.getElementById('longitude').value = position.coords.longitude;
-      }, function(error) {
-        alert("Location access denied or unavailable: " + error.message);
-      });
-    } else {
-      alert("Geolocation is not supported by your browser.");
-    }
-
-    // Submit data to Google Sheets on form submit
-    document.getElementById('geoForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      let name = document.getElementById('name').value.trim();
-      let empId = parseInt(document.getElementById('empId').value);
-      let status = document.getElementById('status').value;
-      let latitude = document.getElementById('latitude').value;
-      let longitude = document.getElementById('longitude').value;
-
-      if (!name) {
-        alert("❌ Please enter your name.");
-        return;
-      }
-      if (empId < 11 || empId > 99 || isNaN(empId)) {
-        alert("❌ Employee ID must be between 11 and 99.");
-        return;
-      }
-      if (!status) {
-        alert("❌ Please select a status (In, Out, Absent).");
-        return;
-      }
-      let url = 'https://script.google.com/macros/s/AKfycbxAYNv6MWZ20KBsxlFLmEvjjUIfiBIjYFwcN2K2O8h7q975JQDpmpHa0xA0aA_EEaFU8A/exec';
-      url += `?name=${encodeURIComponent(name)}&empId=${encodeURIComponent(empId)}&status=${encodeURIComponent(status)}&latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`;
-      fetch(url)
-        .then(response => response.text())
-        .then(data => {
-          alert("✅ Check-In Submitted Successfully!");
-          document.getElementById('geoForm').reset();
-
-    // Auto refill geolocation after reset
-          if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            document.getElementById('latitude').value = position.coords.latitude;
-            document.getElementById('longitude').value = position.coords.longitude;
-        });
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Error submitting data.");
-        });
-      .then(res => res.json())
-      .then(data => {
-        alert("✅ Check-In Submitted Successfully!");
-        document.getElementById('geoForm').reset();
-
-        // Auto-refill geolocation after reset
-        if ("geolocation" in navigator) {
-          navigator.geolocation.getCurrentPosition(function(position) {
-            document.getElementById('latitude').value = position.coords.latitude;
-            document.getElementById('longitude').value = position.coords.longitude;
-          });
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert("❌ Error submitting data.");
-      });
-    });
-  </script>
 </body>
 </html>
