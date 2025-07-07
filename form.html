@@ -13,24 +13,45 @@
   <a id="formLink" href="#" target="_blank">🚀 Open Check-In Form</a>
 
   <script>
+    const targetLat = 28.937574;
+    const targetLon = 77.097000;
+    const radiusInMeters = 200;
+
+    function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // Earth's radius in meters
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
     function getLocationAndGenerateLink() {
       if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-          const lat = position.coords.latitude.toFixed(6);
-          const lon = position.coords.longitude.toFixed(6);
+        navigator.geolocation.getCurrentPosition(function (position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const distance = getDistanceFromLatLonInMeters(lat, lon, targetLat, targetLon);
 
-          document.querySelector('h2').innerText = "✅ Location Captured!";
-          document.getElementById('status').innerText = `Latitude: ${lat}, Longitude: ${lon}`;
+          if (distance <= radiusInMeters) {
+            document.querySelector('h2').innerText = "✅ Location Verified!";
+            document.getElementById('status').innerText = `Within ${radiusInMeters}m: Latitude ${lat.toFixed(6)}, Longitude ${lon.toFixed(6)}`;
 
-          // Prepare Google Form URL
-          const googleFormBase = "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
-          const filledFormLink = `${googleFormBase}&entry.2007994588=${lat}&entry.1088348376=${lon}`;
+            const googleFormBase = "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
+            const filledFormLink = `${googleFormBase}&entry.2007994588=${lat.toFixed(6)}&entry.1088348376=${lon.toFixed(6)}`;
 
-          const formLinkElement = document.getElementById('formLink');
-          formLinkElement.href = filledFormLink;
-          formLinkElement.style.display = "inline";
-          formLinkElement.innerText = "🚀 Click Here to Submit Check-In";
-        }, function(error) {
+            const formLinkElement = document.getElementById('formLink');
+            formLinkElement.href = filledFormLink;
+            formLinkElement.style.display = "inline";
+            formLinkElement.innerText = "🚀 Click Here to Submit Check-In";
+          } else {
+            document.querySelector('h2').innerText = "❌ Outside Allowed Area";
+            document.getElementById('status').innerText = `You are ${Math.round(distance)} meters away from the allowed location.`;
+          }
+        }, function (error) {
           document.querySelector('h2').innerText = "❌ Failed to Fetch Location";
           document.getElementById('status').innerText = "Error: " + error.message;
         });
