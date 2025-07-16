@@ -3,8 +3,18 @@
 <head>
   <title>Location-Based Google Form Auto-Prefill</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
-    #formLink { display: none; font-size: 18px; color: blue; text-decoration: underline; cursor: pointer; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    #formLink {
+      display: none;
+      font-size: 18px;
+      color: blue;
+      text-decoration: underline;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -13,12 +23,13 @@
   <a id="formLink" href="#" target="_blank">🚀 Open Check-In Form</a>
 
   <script>
+    // ✅ Updated Coordinates
     const targetLat = 28.937574;
     const targetLon = 77.097000;
     const radiusInMeters = 200;
 
     function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371000; // Earth's radius in meters
+      const R = 6371000;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
       const a =
@@ -27,6 +38,33 @@
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
+    }
+
+    function getAlphabet(index) {
+      const alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return alphabets[index % 26];
+    }
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateSimpleCode() {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const hour = now.getHours();
+      const hourStr = String(hour).padStart(2, '0');
+      const month = now.getMonth() + 1;
+      const monthStr = String(month).padStart(2, '0');
+
+      const letter1 = getAlphabet(hour);   // Based on hour
+      const letter2 = getAlphabet(month);  // Based on month
+
+      const random1 = getRandomInt(100, 999);
+      const random2 = getRandomInt(10, 99);
+
+      const mainCode = `${day}${letter1}${hourStr}${letter2}${monthStr}`;
+      return `${random1}-${mainCode}-${random2}`;
     }
 
     function getLocationAndGenerateLink() {
@@ -41,12 +79,17 @@
             document.getElementById('status').innerText = `Within ${radiusInMeters}m: Latitude ${lat.toFixed(6)}, Longitude ${lon.toFixed(6)}`;
 
             const googleFormBase = "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
-            const filledFormLink = `${googleFormBase}&entry.2007994588=${lat.toFixed(6)}&entry.1088348376=${lon.toFixed(6)}`;
+            const secretCode = generateSimpleCode();
+
+            const filledFormLink = `${googleFormBase}
+              &entry.2007994588=${lat.toFixed(6)}
+              &entry.1088348376=${lon.toFixed(6)}
+              &entry.1749849562=${secretCode}`;
 
             const formLinkElement = document.getElementById('formLink');
             formLinkElement.href = filledFormLink;
             formLinkElement.style.display = "inline";
-            formLinkElement.innerText = "🚀 Click Here to Submit Check-In";
+            formLinkElement.innerText = `🚀 Click Here to Submit Check-In (Code: ${secretCode})`;
           } else {
             document.querySelector('h2').innerText = "❌ Outside Allowed Area";
             document.getElementById('status').innerText = `You are ${Math.round(distance)} meters away from the allowed location.`;
