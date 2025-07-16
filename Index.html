@@ -1,84 +1,110 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Employee Geo Check-In</title>
+  <title>Location-Based Google Form Auto-Prefill</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    #formLink {
+      display: none;
+      font-size: 18px;
+      color: blue;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <h2>Employee Geo Check-In Form</h2>
-
-  <form id="geoForm">
-
-    Latitude:
-    <input type="text" id="latitude" name="latitude" readonly><br><br>
-
-    Longitude:
-    <input type="text" id="longitude" name="longitude" readonly><br><br>
-
-    Name:
-    <input type="text" id="name" name="name" required><br><br>
-
-    Employee ID (11-99): 
-    <input type="number" id="empId" name="empId" min="11" max="99" required><br><br>
-
-    Status:
-    <select id="status" name="status" required>
-      <option value="">--Select Status--</option>
-      <option value="In">In</option>
-      <option value="Out">Out</option>
-      <option value="Absent">Absent</option>
-    </select><br><br>
-
-    <button type="submit">Submit Check-In</button>
-  </form>
+  <h2>🔄 Fetching your location...</h2>
+  <p id="status">Please wait while we capture your location.</p>
+  <a id="formLink" href="#" target="_blank">🚀 Open Check-In Form</a>
 
   <script>
-    // Auto-fetch geolocation
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        document.getElementById('latitude').value = position.coords.latitude;
-        document.getElementById('longitude').value = position.coords.longitude;
-      }, function(error) {
-        alert("Location access denied or unavailable: " + error.message);
-      });
-    } else {
-      alert("Geolocation is not supported by your browser.");
+    // ✅ Updated Coordinates
+    const targetLat = 28.937574;
+    const targetLon = 77.097000;
+    const radiusInMeters = 200;
+
+    function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
     }
 
-    // Form submission
-    document.getElementById('geoForm').addEventListener('submit', function(e) {
-      e.preventDefault();
+    function getAlphabet(index) {
+      const alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return alphabets[index % 26];
+    }
 
-      let name = document.getElementById('name').value.trim();
-      let empId = parseInt(document.getElementById('empId').value);
-      let status = document.getElementById('status').value;
-      let latitude = document.getElementById('latitude').value;
-      let longitude = document.getElementById('longitude').value;
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
 
-      // Validation
-      if (!name) {
-        alert("❌ Please enter your name.");
-        return;
+    function generateSimpleCode() {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const hour = now.getHours();
+      const hourStr = String(hour).padStart(2, '0');
+      const month = now.getMonth() + 1;
+      const monthStr = String(month).padStart(2, '0');
+
+      const letter1 = getAlphabet(hour);   // Based on hour
+      const letter2 = getAlphabet(month);  // Based on month
+
+      const random1 = getRandomInt(100, 999);
+      const random2 = getRandomInt(10, 99);
+
+      const mainCode = `${day}${letter1}${hourStr}${letter2}${monthStr}`;
+      return `${random1}-${mainCode}-${random2}`;
+    }
+
+    function getLocationAndGenerateLink() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const distance = getDistanceFromLatLonInMeters(lat, lon, targetLat, targetLon);
+
+          if (distance <= radiusInMeters) {
+            document.querySelector('h2').innerText = "✅ Location Verified!";
+            document.getElementById('status').innerText = `Within ${radiusInMeters}m: Latitude ${lat.toFixed(6)}, Longitude ${lon.toFixed(6)}`;
+
+            const googleFormBase = "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
+            const secretCode = generateSimpleCode();
+
+            const filledFormLink = `${googleFormBase}
+              &entry.2007994588=${lat.toFixed(6)}
+              &entry.1088348376=${lon.toFixed(6)}
+              &entry.1749849562=${secretCode}`;
+
+            const formLinkElement = document.getElementById('formLink');
+            formLinkElement.href = filledFormLink;
+            formLinkElement.style.display = "inline";
+            formLinkElement.innerText = `🚀 Click Here to Submit Check-In (Code: ${secretCode})`;
+          } else {
+            document.querySelector('h2').innerText = "❌ Outside Allowed Area";
+            document.getElementById('status').innerText = `You are ${Math.round(distance)} meters away from the allowed location.`;
+          }
+        }, function (error) {
+          document.querySelector('h2').innerText = "❌ Failed to Fetch Location";
+          document.getElementById('status').innerText = "Error: " + error.message;
+        });
+      } else {
+        document.querySelector('h2').innerText = "❌ Geolocation Not Supported";
+        document.getElementById('status').innerText = "Your browser does not support location fetching.";
       }
-      if (empId < 11 || empId > 99 || isNaN(empId)) {
-        alert("❌ Employee ID must be between 11 and 99.");
-        return;
-      }
-      if (!status) {
-        alert("❌ Please select a status (In, Out, Absent).");
-        return;
-      }
+    }
 
-      alert(
-        "✅ Check-In Submitted:\n" +
-        "Name: " + name + "\n" +
-        "Employee ID: " + empId + "\n" +
-        "Status: " + status + "\n" +
-        "Latitude: " + latitude + "\n" +
-        "Longitude: " + longitude
-      );
-
-      // Backend / Google Sheets / Firebase saving code can be added here
-    });
+    getLocationAndGenerateLink();
   </script>
 </body>
 </html>
