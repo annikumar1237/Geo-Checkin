@@ -3,8 +3,18 @@
 <head>
   <title>Location-Based Google Form Auto-Prefill</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
-    #formLink { display: none; font-size: 18px; color: blue; text-decoration: underline; cursor: pointer; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    #formLink {
+      display: none;
+      font-size: 18px;
+      color: blue;
+      text-decoration: underline;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -46,8 +56,8 @@
       const month = now.getMonth() + 1;
       const monthStr = String(month).padStart(2, '0');
 
-      const letter1 = getAlphabet(hour);
-      const letter2 = getAlphabet(month);
+      const letter1 = getAlphabet(hour);   // Based on hour
+      const letter2 = getAlphabet(month);  // Based on month
 
       const random1 = getRandomInt(100, 999);
       const random2 = getRandomInt(10, 99);
@@ -70,7 +80,10 @@
             const googleFormBase = "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
             const secretCode = generateSimpleCode();
 
-            const filledFormLink = `${googleFormBase}&entry.2007994588=${lat.toFixed(6)}&entry.1088348376=${lon.toFixed(6)}&entry.1234567890=${secretCode}`;
+            const filledFormLink = `${googleFormBase}
+              &entry.2007994588=${lat.toFixed(6)}
+              &entry.1088348376=${lon.toFixed(6)}
+              &entry.1749849562=${secretCode}`;
 
             const formLinkElement = document.getElementById('formLink');
             formLinkElement.href = filledFormLink;
