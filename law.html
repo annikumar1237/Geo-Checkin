@@ -29,12 +29,21 @@
       return R * c;
     }
 
+    function getRandomAlphabet() {
+      const alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return alphabets[Math.floor(Math.random() * alphabets.length)];
+    }
+
     function generateSimpleCode() {
       const now = new Date();
       const day = String(now.getDate()).padStart(2, '0');
       const hour = String(now.getHours()).padStart(2, '0');
       const month = String(now.getMonth() + 1).padStart(2, '0');
-      return day + hour + month;
+
+      const randomChar1 = getRandomAlphabet();
+      const randomChar2 = getRandomAlphabet();
+
+      return `${day}${randomChar1}${hour}${randomChar2}${month}`;
     }
 
     function getLocationAndGenerateLink() {
