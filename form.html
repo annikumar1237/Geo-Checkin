@@ -15,12 +15,32 @@
       text-decoration: underline;
       cursor: pointer;
     }
+    #leaveSection {
+      margin-top: 50px; /* 🔽 Thoda niche */
+    }
+    #leaveSection h3 {
+      font-size: 22px;
+      color: red;
+      margin-bottom: 10px;
+    }
+    #leaveSection a {
+      font-size: 18px;
+      color: blue;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <h2>🔄 Fetching your location...</h2>
   <p id="status">Please wait while we capture your location.</p>
   <a id="formLink" href="#" target="_blank">🚀 Open Check-In Form</a>
+
+  <!-- Leave Section (Always Visible) -->
+  <div id="leaveSection">
+    <h3>📌 Leave Application:</h3>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdLhIjjSMSPMalr0Hanbb7idXZ0GhDxkNnby9U-5Ja83UbWZg/viewform?usp=sharing&ouid=102949336881270247046" 
+       target="_blank">📝 Click Here to Submit Leave Form</a>
+  </div>
 
   <script>
     // ✅ Updated Coordinates
@@ -90,6 +110,7 @@
             formLinkElement.href = filledFormLink;
             formLinkElement.style.display = "inline";
             formLinkElement.innerText = `🚀 Click Here to Submit Check-In (Code: ${secretCode})`;
+
           } else {
             document.querySelector('h2').innerText = "❌ Outside Allowed Area";
             document.getElementById('status').innerText = `You are ${Math.round(distance)} meters away from the allowed location.`;
