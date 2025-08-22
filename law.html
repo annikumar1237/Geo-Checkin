@@ -11,20 +11,23 @@
       min-height: 100vh;
       position: relative;
     }
-    #formLink, #leaveLink {
+    #formLink {
       display: none;
       font-size: 18px;
       text-decoration: underline;
       cursor: pointer;
+      color: blue;
     }
-    #formLink { color: blue; }
     #leaveLink { 
       color: #0a7d16;
       position: fixed;
       left: 50%;
-      bottom: 40%;   /* 👈 aur upar kar diya */
+      bottom: 40%;   /* 👈 center ke thoda upar */
       transform: translateX(-50%);
       font-weight: bold;
+      font-size: 18px;
+      text-decoration: underline;
+      cursor: pointer;
     }
     #status { margin: 8px 0 4px; }
   </style>
@@ -36,7 +39,7 @@
   <!-- Primary (inside radius) -->
   <a id="formLink" href="#" target="_blank">🚀 Open Check-In Form</a>
 
-  <!-- Secondary (leave application) -->
+  <!-- Secondary (Leave application - Always visible) -->
   <a id="leaveLink" href="https://docs.google.com/forms/d/e/1FAIpQLSeLJG9dN7h4CwLlOSQzPQi3t9H_IGD1YsqFujzolceQ2f_hWg/viewform?usp=sharing&ouid=104726397492692696608" target="_blank">
     📝 Leave Application Form
   </a>
@@ -88,20 +91,11 @@
     const h2 = document.querySelector('h2');
     const statusEl = document.getElementById('status');
     const formLinkEl = document.getElementById('formLink');
-    const leaveLinkEl = document.getElementById('leaveLink');
-
-    function showLeaveLink(message) {
-      h2.innerText = "❌ Outside Allowed Area";
-      if (message) statusEl.innerText = message;
-      leaveLinkEl.style.display = "inline";
-      formLinkEl.style.display = "none";
-    }
 
     function getLocationAndGenerateLink() {
       if (!("geolocation" in navigator)) {
         h2.innerText = "❌ Geolocation Not Supported";
         statusEl.innerText = "Your browser does not support location fetching.";
-        leaveLinkEl.style.display = "inline";
         return;
       }
 
@@ -128,15 +122,14 @@
           formLinkEl.href = filledFormLink;
           formLinkEl.style.display = "inline";
           formLinkEl.innerText = `🚀 Click Here to Submit Check-In (Code: ${secretCode})`;
-
-          leaveLinkEl.style.display = "none";
         } else {
-          showLeaveLink(`You are ${Math.round(distance)} meters away from the allowed location.`);
+          h2.innerText = "❌ Outside Allowed Area";
+          statusEl.innerText = `You are ${Math.round(distance)} meters away from the allowed location.`;
+          formLinkEl.style.display = "none";
         }
       }, function (error) {
         h2.innerText = "❌ Failed to Fetch Location";
         statusEl.innerText = "Error: " + error.message;
-        leaveLinkEl.style.display = "inline";
         formLinkEl.style.display = "none";
       }, {
         enableHighAccuracy: true,
