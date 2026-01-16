@@ -16,7 +16,7 @@
       cursor: pointer;
     }
     #leaveSection {
-      margin-top: 50px; /* 🔽 Thoda niche */
+      margin-top: 50px; 
     }
     #leaveSection h3 {
       font-size: 22px;
@@ -35,7 +35,6 @@
   <p id="status">Please wait while we capture your location.</p>
   <a id="formLink" href="#" target="_blank">🚀 Open Check-In Form</a>
 
-  <!-- Leave Section (Always Visible) -->
   <div id="leaveSection">
     <h3>📌 Leave Application:</h3>
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSdLhIjjSMSPMalr0Hanbb7idXZ0GhDxkNnby9U-5Ja83UbWZg/viewform?usp=sharing&ouid=102949336881270247046" 
@@ -43,11 +42,19 @@
   </div>
 
   <script>
-    // ✅ Updated Coordinates
+    // -----------------------------
+    // CONFIGURATION
+    // -----------------------------
     const targetLat = 28.937574;
     const targetLon = 77.097000;
     const radiusInMeters = 200;
 
+    const ONE_HOUR = 60 * 60 * 1000; // 1 hour in ms
+    const STORAGE_KEY = "lastCheckInTime";
+
+    // -----------------------------
+    // HELPER FUNCTIONS
+    // -----------------------------
     function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
       const R = 6371000;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -87,44 +94,81 @@
       return `${random1}-${mainCode}-${random2}`;
     }
 
+    // -----------------------------
+    // MAIN FUNCTION
+    // -----------------------------
     function getLocationAndGenerateLink() {
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          const distance = getDistanceFromLatLonInMeters(lat, lon, targetLat, targetLon);
 
-          if (distance <= radiusInMeters) {
-            document.querySelector('h2').innerText = "✅ Location Verified!";
-            document.getElementById('status').innerText = `Within ${radiusInMeters}m: Latitude ${lat.toFixed(6)}, Longitude ${lon.toFixed(6)}`;
+      // 1️⃣ Check 1-hour restriction
+      const lastTime = localStorage.getItem(STORAGE_KEY);
+      const now = Date.now();
+      if (lastTime && (now - lastTime) < ONE_HOUR) {
+        const remaining = Math.ceil((ONE_HOUR - (now - lastTime)) / 60000);
+        document.querySelector('h2').innerText = "⏳ Check-in Already Done";
+        document.getElementById('status').innerText = `You can check-in again after ${remaining} minutes.`;
+        document.getElementById('formLink').style.display = "none";
+        return;
+      }
 
-            const googleFormBase = "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
-            const secretCode = generateSimpleCode();
-
-            const filledFormLink = `${googleFormBase}
-              &entry.2007994588=${lat.toFixed(6)}
-              &entry.1088348376=${lon.toFixed(6)}
-              &entry.1749849562=${secretCode}`;
-
-            const formLinkElement = document.getElementById('formLink');
-            formLinkElement.href = filledFormLink;
-            formLinkElement.style.display = "inline";
-            formLinkElement.innerText = `🚀 Click Here to Submit Check-In (Code: ${secretCode})`;
-
-          } else {
-            document.querySelector('h2').innerText = "❌ Outside Allowed Area";
-            document.getElementById('status').innerText = `You are ${Math.round(distance)} meters away from the allowed location.`;
-          }
-        }, function (error) {
-          document.querySelector('h2').innerText = "❌ Failed to Fetch Location";
-          document.getElementById('status').innerText = "Error: " + error.message;
-        });
-      } else {
+      // 2️⃣ Geolocation check
+      if (!("geolocation" in navigator)) {
         document.querySelector('h2').innerText = "❌ Geolocation Not Supported";
         document.getElementById('status').innerText = "Your browser does not support location fetching.";
+        return;
       }
+
+      navigator.geolocation.getCurrentPosition(function (position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const distance = getDistanceFromLatLonInMeters(lat, lon, targetLat, targetLon);
+
+        if (distance <= radiusInMeters) {
+          document.querySelector('h2').innerText = "✅ Location Verified!";
+          document.getElementById('status').innerText = `Within ${radiusInMeters}m: Latitude ${lat.toFixed(6)}, Longitude ${lon.toFixed(6)}`;
+
+          const googleFormBase = "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
+          const secretCode = generateSimpleCode();
+
+          const filledFormLink = `${googleFormBase}
+            &entry.2007994588=${lat.toFixed(6)}
+            &entry.1088348376=${lon.toFixed(6)}
+            &entry.1749849562=${secretCode}`;
+
+          const formLinkElement = document.getElementById('formLink');
+          formLinkElement.href = filledFormLink;
+          formLinkElement.style.display = "inline";
+          formLinkElement.innerText = `🚀 Click Here to Submit Check-In (Code: ${secretCode})`;
+
+          // Save timestamp for 1-hour lock
+          localStorage.setItem(STORAGE_KEY, now);
+
+          // 🔄 AUTO RELOAD AFTER CLICK
+          formLinkElement.addEventListener('click', function() {
+            setTimeout(function() {
+              location.reload();
+            }, 2000); // 2 seconds delay
+          });
+
+        } else {
+          document.querySelector('h2').innerText = "❌ Outside Allowed Area";
+          document.getElementById('status').innerText = `You are ${Math.round(distance)} meters away from the allowed location.`;
+          document.getElementById('formLink').style.display = "none";
+        }
+
+      }, function (error) {
+        document.querySelector('h2').innerText = "❌ Failed to Fetch Location";
+        document.getElementById('status').innerText = "Error: " + error.message;
+        document.getElementById('formLink').style.display = "none";
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 15000
+      });
     }
 
+    // -----------------------------
+    // RUN
+    // -----------------------------
     getLocationAndGenerateLink();
   </script>
 </body>
