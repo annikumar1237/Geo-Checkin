@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Location-Based Google Form Auto-Prefill</title>
+  <title>Location-Based Attendance</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,184 +14,137 @@
       color: blue;
       text-decoration: underline;
       cursor: pointer;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    #confirmBox {
+      display: none;
+      margin-top: 20px;
+      font-size: 16px;
     }
     #leaveSection {
       margin-top: 50px;
-    }
-    #leaveSection h3 {
-      font-size: 22px;
-      color: red;
-      margin-bottom: 10px;
-    }
-    #leaveSection a {
-      font-size: 18px;
-      color: blue;
-      text-decoration: underline;
     }
   </style>
 </head>
 
 <body>
-
   <h2>🔄 Fetching your location...</h2>
   <p id="status">Please wait while we capture your location.</p>
-  <a id="formLink" href="#" target="_blank">🚀 Open Check-In Form</a>
 
+  <!-- Checkbox -->
+  <div id="confirmBox">
+    <label>
+      <input type="checkbox" id="confirmCheck">
+      I confirm I am present at the location
+    </label>
+  </div>
+
+  <!-- Form Link -->
+  <a id="formLink" href="#" target="_blank">
+    🚀 Click Here to Submit Check‑In
+  </a>
+
+  <!-- Leave Form -->
   <div id="leaveSection">
     <h3>📌 Leave Application:</h3>
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdLhIjjSMSPMalr0Hanbb7idXZ0GhDxkNnby9U-5Ja83UbWZg/viewform?usp=sharing&ouid=102949336881270247046"
-       target="_blank">📝 Click Here to Submit Leave Form</a>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdLhIjjSMSPMalr0Hanbb7idXZ0GhDxkNnby9U-5Ja83UbWZg/viewform"
+       target="_blank">📝 Submit Leave Form</a>
   </div>
 
 <script>
-/* =============================
-   CONFIGURATION
-============================= */
-
+/* ---------------- CONFIG ---------------- */
 const targetLat = 28.937574;
 const targetLon = 77.097000;
 const radiusInMeters = 200;
-
-// ⏳ 4 HOURS LOCK
-const FOUR_HOURS = 4 * 60 * 60 * 1000;
+const ONE_HOUR = 4 * 60 * 60 * 1000;
 const STORAGE_KEY = "lastCheckInTime";
 
-/* =============================
-   HELPER FUNCTIONS
-============================= */
-
-function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+/* --------- HELPER FUNCTIONS --------- */
+function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+    Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) *
+    Math.cos(lat2*Math.PI/180) *
+    Math.sin(dLon/2)**2;
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-function getAlphabet(index) {
-  return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[index % 26];
+function randomCode() {
+  return Math.floor(100 + Math.random()*900) + "-CHK-" + Date.now().toString().slice(-4);
 }
 
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+/* --------- MAIN LOGIC --------- */
+function startCheckIn() {
 
-function generateSimpleCode() {
-  const now = new Date();
-  const day = String(now.getDate()).padStart(2, '0');
-  const hour = now.getHours();
-  const hourStr = String(hour).padStart(2, '0');
-  const month = now.getMonth() + 1;
-  const monthStr = String(month).padStart(2, '0');
-
-  const letter1 = getAlphabet(hour);
-  const letter2 = getAlphabet(month);
-
-  const random1 = getRandomInt(100, 999);
-  const random2 = getRandomInt(10, 99);
-
-  const mainCode = `${day}${letter1}${hourStr}${letter2}${monthStr}`;
-  return `${random1}-${mainCode}-${random2}`;
-}
-
-/* =============================
-   MAIN FUNCTION
-============================= */
-
-function getLocationAndGenerateLink() {
-
-  // ⏳ 4 HOURS CHECK
   const lastTime = localStorage.getItem(STORAGE_KEY);
   const now = Date.now();
 
-  if (lastTime && (now - lastTime) < FOUR_HOURS) {
-    const remaining = Math.ceil(
-      (FOUR_HOURS - (now - lastTime)) / 60000
-    );
-    document.querySelector('h2').innerText = "⏳ Check-in Already Done";
-    document.getElementById('status').innerText =
-      `You can check-in again after ${remaining} minutes.`;
-    document.getElementById('formLink').style.display = "none";
+  if (lastTime && (now - lastTime) < ONE_HOUR) {
+    document.querySelector("h2").innerText = "⏳ Check‑In Already Done";
+    document.getElementById("status").innerText = "Try again after 1 hour.";
     return;
   }
 
   if (!navigator.geolocation) {
-    document.querySelector('h2').innerText = "❌ Geolocation Not Supported";
-    document.getElementById('status').innerText =
-      "Your browser does not support location access.";
+    document.getElementById("status").innerText = "Geolocation not supported.";
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(
-    function(position) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    const distance = getDistance(lat, lon, targetLat, targetLon);
 
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-      const distance = getDistanceFromLatLonInMeters(
-        lat, lon, targetLat, targetLon
-      );
+    if (distance <= radiusInMeters) {
 
-      if (distance <= radiusInMeters) {
+      document.querySelector("h2").innerText = "✅ Location Verified";
+      document.getElementById("status").innerText =
+        `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`;
 
-        document.querySelector('h2').innerText = "✅ Location Verified!";
-        document.getElementById('status').innerText =
-          `Within ${radiusInMeters}m | Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`;
+      const code = randomCode();
+      const formBase =
+        "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
 
-        const googleFormBase =
-          "https://docs.google.com/forms/d/e/1FAIpQLSdeBpg9REgKjth9psQm19Pn8sVWqRq9yyv9mZ2eN3otb5PGWw/viewform?usp=pp_url";
+      const finalLink =
+        `${formBase}&entry.2007994588=${lat.toFixed(6)}&entry.1088348376=${lon.toFixed(6)}&entry.1749849562=${code}`;
 
-        const secretCode = generateSimpleCode();
+      const link = document.getElementById("formLink");
+      link.href = finalLink;
+      link.innerText = `🚀 Submit Check‑In (Code: ${code})`;
+      link.style.display = "inline";
 
-        const filledFormLink =
-          `${googleFormBase}` +
-          `&entry.2007994588=${lat.toFixed(6)}` +
-          `&entry.1088348376=${lon.toFixed(6)}` +
-          `&entry.1749849562=${secretCode}`;
+      document.getElementById("confirmBox").style.display = "block";
 
-        const formLinkElement = document.getElementById('formLink');
-        formLinkElement.href = filledFormLink;
-        formLinkElement.style.display = "inline";
-        formLinkElement.innerText =
-          `🚀 Click Here to Submit Check-In (Code: ${secretCode})`;
+      document.getElementById("confirmCheck").addEventListener("change", function () {
+        if (this.checked) {
+          link.style.pointerEvents = "auto";
+          link.style.opacity = "1";
+          localStorage.setItem(STORAGE_KEY, Date.now());
+        } else {
+          link.style.pointerEvents = "none";
+          link.style.opacity = "0.5";
+        }
+      });
 
-        // Save lock time
-        localStorage.setItem(STORAGE_KEY, now);
-
-        // 🔄 Auto Reload
-        formLinkElement.addEventListener('click', function () {
-          setTimeout(() => location.reload(), 2000);
-        });
-
-      } else {
-        document.querySelector('h2').innerText = "❌ Outside Allowed Area";
-        document.getElementById('status').innerText =
-          `You are ${Math.round(distance)} meters away from the allowed location.`;
-        document.getElementById('formLink').style.display = "none";
-      }
-    },
-    function(error) {
-      document.querySelector('h2').innerText = "❌ Location Error";
-      document.getElementById('status').innerText = error.message;
-      document.getElementById('formLink').style.display = "none";
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 15000
+    } else {
+      document.querySelector("h2").innerText = "❌ Outside Allowed Area";
+      document.getElementById("status").innerText =
+        `You are ${Math.round(distance)} meters away.`;
     }
-  );
+
+  }, err => {
+    document.getElementById("status").innerText = err.message;
+  }, {
+    enableHighAccuracy: true,
+    timeout: 15000
+  });
 }
 
-/* =============================
-   RUN
-============================= */
-getLocationAndGenerateLink();
-
+startCheckIn();
 </script>
 
 </body>
