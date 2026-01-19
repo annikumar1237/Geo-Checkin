@@ -85,7 +85,7 @@ function startCheckIn() {
 
   if (lastTime && (now - lastTime) < ONE_HOUR) {
     document.querySelector("h2").innerText = "⏳ Check‑In Already Done";
-    document.getElementById("status").innerText = "Try again after 1 hour.";
+    document.getElementById("status").innerText = "Wait your time not completed.";
     return;
   }
 
@@ -149,3 +149,4 @@ startCheckIn();
 
 </body>
 </html>
+
